@@ -43,4 +43,6 @@ jobs:
         # Forzamos la salida detallada y activamos el trace
         run: |
           export TF_LOG=DEBUG 
-          terraform -chdir=environments/host apply -auto-approve
+          terraform -chdir=environments/host apply \
+          -var-file="terraform.tfvars" \
+          -auto-approve
