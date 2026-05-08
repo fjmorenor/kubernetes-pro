@@ -40,9 +40,9 @@ jobs:
         run: terraform -chdir=environments/host init
 
       - name: 'Terraform Apply'
-        # Forzamos la salida detallada y activamos el trace
         run: |
           export TF_LOG=DEBUG 
           terraform -chdir=environments/host apply \
-          -var-file="terraform.tfvars" \
-          -auto-approve
+            -var-file="terraform.tfvars" \
+            -input=false \
+            -auto-approve
