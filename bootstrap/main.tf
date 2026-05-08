@@ -23,7 +23,8 @@ module "sa_github" {
     "roles/iam.serviceAccountUser",         # Permite "actuar como" otras cuentas (necesario para GKE).
     "roles/resourcemanager.projectIamAdmin",
     "roles/artifactregistry.admin",
-    "roles/artifactregistry.reader"
+    "roles/artifactregistry.reader",
+    "roles/serviceusage.serviceUsageAdmin"
   ]
 }
 
