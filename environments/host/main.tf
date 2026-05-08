@@ -88,7 +88,7 @@ module "cloud_nat" {
   region     = var.region
   
   # Conecta con: El módulo 'network' para saber en qué VPC debe actuar el Router[cite: 133].
-  vpc_name   = module.network.vpc_self_link
+  vpc_name   = var.vpc_name
 
   # Recibe del Main: Configuración para que Google asigne IPs públicas automáticamente[cite: 130].
   nat_ip_allocate_option = "AUTO_ONLY"

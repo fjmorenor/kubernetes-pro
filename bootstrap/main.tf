@@ -24,7 +24,8 @@ module "sa_github" {
     "roles/resourcemanager.projectIamAdmin",
     "roles/artifactregistry.admin",
     "roles/artifactregistry.reader",
-    "roles/serviceusage.serviceUsageAdmin"
+    "roles/serviceusage.serviceUsageAdmin",
+    "roles/compute.networkAdmin"
   ]
 }
 
