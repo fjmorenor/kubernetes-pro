@@ -1,58 +1,56 @@
 provider "google" {
-    project = var.project_id
-    region = var.region
+  project = var.project_id # Proyecto DEV
+  region  = var.region
 }
 
 provider "google" {
-    alias = "host"
-    project = var.host_project_id
-    region = var.region
-}
-
-module "sa_github" {
-  source = "../modules/iam"
-  project_id = var.host_project_id
-  sa_id = "sa-github"
-  sa_display_name = "Service Account para Github"
-  sa_description = "Cuenta de servicio para Github"
-
- roles = [ 
-    "roles/container.admin",                # Permite gestionar clústeres de Kubernetes (GKE) en DEV.
-    "roles/compute.networkAdmin",           # Permite configurar firewalls y subredes locales en DEV.
-    "roles/storage.admin",                  # Permite guardar archivos en los Buckets de DEV.
-    "roles/iam.serviceAccountUser",         # Permite "actuar como" otras cuentas (necesario para GKE).
-    "roles/resourcemanager.projectIamAdmin",
-    "roles/artifactregistry.admin",
-    "roles/artifactregistry.reader",
-    "roles/serviceusage.serviceUsageAdmin",
-    "roles/compute.networkAdmin",
-    "roles/compute.securityAdmin",
-    "roles/serviceusage.serviceUsageAdmin",
-    "roles/serviceusage.serviceUsageAdmin",
-    "roles/compute.admin"
-  ]
-}
-
-resource "google_project_iam_member" "host_storage_access" {
-    provider = google.host
-    project = var.host_project_id
-    role = "roles/storage.admin"
-    member = "serviceAccount:${module.sa_github.email}"
-
-    depends_on = [ module.sa_github ]
-    
-}
-
-resource "google_project_iam_member" "host_network_access" {
-    provider = google.host
-    project = var.host_project_id
-    role = "roles/compute.networkAdmin"
-    member = "serviceAccount:${module.sa_github.email}"
-    
+  alias   = "host"
+  project = var.host_project_id # Proyecto HOST
+  region  = var.region
 }
 
 # =============================================================================
-# INFRAESTRUCTURA BASE: WORKLOAD IDENTITY FEDERATION
+# 1. CREACIÓN DE LA SERVICE ACCOUNT (Solo una vez, en el proyecto HOST)
+# =============================================================================
+module "sa_github" {
+  source          = "../modules/iam"
+  project_id      = var.host_project_id
+  sa_id           = "sa-github"
+  sa_display_name = "Service Account para Github"
+  sa_description  = "Cuenta de servicio centralizada para CI/CD"
+
+  # Roles dentro del proyecto HOST (Red y Almacenamiento de State)
+  roles = [
+    "roles/compute.networkAdmin",
+    "roles/compute.securityAdmin",
+    "roles/storage.admin",
+    "roles/serviceusage.serviceUsageAdmin",
+    "roles/iam.workloadIdentityUser"
+  ]
+}
+
+# =============================================================================
+# 2. PERMISOS EN EL PROYECTO DEV (El "Puente" de roles)
+# =============================================================================
+resource "google_project_iam_member" "github_sa_dev_permissions" {
+  for_each = toset([
+    "roles/container.admin",                # Poder total sobre GKE
+    "roles/serviceusage.serviceUsageAdmin", # Poder activar APIs en DEV
+    "roles/compute.admin",                  # Poder crear los nodos del clúster
+    "roles/iam.serviceAccountUser",         # Poder usar las SAs de los nodos
+    "roles/resourcemanager.projectIamAdmin",# Poder gestionar permisos en DEV
+    "roles/artifactregistry.admin"          # Poder subir imágenes Docker
+  ])
+
+  project = var.project_id # ID del proyecto DEV
+  role    = each.key
+  member  = "serviceAccount:${module.sa_github.email}" 
+
+  depends_on = [module.sa_github]
+}
+
+# =============================================================================
+# 3. WORKLOAD IDENTITY FEDERATION (WIF)
 # =============================================================================
 resource "google_iam_workload_identity_pool" "github_pool" {
   workload_identity_pool_id = "github-actions-pool-v2"
@@ -76,15 +74,9 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
   attribute_condition = "assertion.repository_owner == 'fjmorenor'"
 }
 
-# =============================================================================
-# VÍNCULO DE CONFIANZA (EL PUENTE)
-# =============================================================================
+# Vincular WIF con la SA creada
 resource "google_service_account_iam_member" "github_wif_binding" {
-  # Conecta con: La SA creada mediante el módulo IAM
   service_account_id = module.sa_github.name
   role               = "roles/iam.workloadIdentityUser"
-
-  # Recibe del Main: Filtro estricto por repositorio
-  # IMPORTANTE: Reemplaza con tu REPO real antes de subir a GitHub
-  member = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/fjmorenor/kubernetes-pro"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/fjmorenor/kubernetes-pro"
 }
