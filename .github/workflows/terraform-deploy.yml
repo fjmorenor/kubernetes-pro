@@ -3,11 +3,11 @@ name: 'Terraform Deploy'
 on:
   push:
     branches: ["main"]
-  workflow_dispatch: # Permite ejecución manual desde la pestaña Actions
+  workflow_dispatch:
 
 permissions:
   contents: 'read'
-  id-token: 'write' # Obligatorio para la autenticación OIDC con Google Cloud
+  id-token: 'write'
 
 jobs:
   terraform-deploy:
@@ -15,10 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     
     env:
-      # Variables de entorno para que Terraform las recoja automáticamente
-      TF_VAR_host_project_id: ${{ secrets.GCP_PROJECT_ID }}
-      TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-      # Cambiamos a INFO para evitar logs excesivos, pero mantenemos DEBUG en el apply si falla
+      TF_VAR_host_project_id: ${{ secrets.GCP_PROJECT_ID_HOST }}
+      TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID_DEV }}
       TF_LOG: INFO 
 
     steps:
@@ -35,9 +33,7 @@ jobs:
       - name: '3. Install Terraform'
         uses: hashicorp/setup-terraform@v3
 
-      # -----------------------------------------------------------------------
-      # FASE 1: REDES Y APIs (Carpeta Host)
-      # -----------------------------------------------------------------------
+      # --- FASE 1: HOST ---
       - name: '4. Terraform Init (Host)'
         run: terraform -chdir=environments/host init
 
@@ -45,19 +41,25 @@ jobs:
         run: |
           terraform -chdir=environments/host apply \
             -var-file="terraform.tfvars" \
-            -input=false \
             -auto-approve
 
-      # -----------------------------------------------------------------------
-      # FASE 2: CLÚSTER KUBERNETES (Carpeta Dev)
-      # -----------------------------------------------------------------------
+      # --- FASE INTERMEDIA: SHARED VPC ---
+      - name: '5.1. Terraform Init (Shared VPC Link)'
+        run: terraform -chdir=modules/shared-vpc init
+
+      - name: '5.2. Terraform Apply (Shared VPC Link)'
+        run: |
+          terraform -chdir=modules/shared-vpc apply \
+            -var="host_project_id=zafa-host-zafa" \
+            -var="service_project_id=zafa-dev-zafa" \
+            -auto-approve
+
+      # --- FASE 2: DEV ---
       - name: '6. Terraform Init (Dev)'
         run: terraform -chdir=environments/dev init
 
       - name: '7. Terraform Apply (Dev)'
         run: |
-          # NOTA: Este paso tardará entre 10 y 15 minutos en la primera ejecución
           terraform -chdir=environments/dev apply \
             -var-file="terraform.tfvars" \
-            -input=false \
             -auto-approve
