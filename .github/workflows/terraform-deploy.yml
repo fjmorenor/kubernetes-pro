@@ -1,0 +1,58 @@
+# =============================================================================
+# NOMBRE DEL WORKFLOW: Orquestador de Infraestructura Multicloud
+# =============================================================================
+name: 'Infrastructure Deployment Pipeline'
+
+# Definimos CUÁNDO se ejecuta este código.
+on:
+  push:
+    branches: [ "main" ] # Se dispara automáticamente al hacer 'git push' a la rama main.
+
+# =============================================================================
+# PERMISOS DE SEGURIDAD (CRÍTICO PARA WIF)
+# =============================================================================
+permissions:
+  contents: 'read'    # Permite al runner leer tu código del repositorio.
+  id-token: 'write'   # OBLIGATORIO: Permite que GitHub genere el token JWT para 
+                      # intercambiarlo con Google Cloud mediante OIDC.
+
+jobs:
+  terraform-deploy:
+    name: 'GCP Infrastructure Sync'
+    runs-on: ubuntu-latest # Usamos un servidor efímero de GitHub con Linux.
+
+    steps:
+      # 1. CLONAR EL REPOSITORIO
+      # Descarga tu código dentro del servidor de GitHub Actions.
+      - name: 'Checkout Source Code'
+        uses: actions/checkout@v4
+
+      # 2. AUTENTICACIÓN FEDERADA (EL APRETÓN DE MANOS)
+      # Aquí es donde ocurre la magia del WIF que configuramos en el Bootstrap.
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud via WIF'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          # Conecta con el Provider que creamos (Almacenado en Secrets).
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          # Especifica qué identidad asumirá GitHub (Almacenado en Secrets).
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+          # Crea un token de acceso de corta duración (60 min máx).
+          token_format: 'access_token'
+
+      # 3. INSTALACIÓN DE HERRAMIENTAS
+      # Prepara el binario de Terraform en el servidor de GitHub.
+      - name: 'Install Terraform'
+        uses: hashicorp/setup-terraform@v3
+
+      # 4. INICIALIZACIÓN DEL BACKEND (PROYECTO HOST)
+      # El parámetro -chdir apunta a la carpeta de la red compartida.
+      # Se conecta al bucket de Google Cloud Storage para leer el estado (.tfstate).
+      - name: 'Terraform Init (Host Environment)'
+        run: terraform -chdir=environments/host init
+
+      # 5. VALIDACIÓN Y DESPLIEGUE
+      # Aplica los cambios de forma automática (-auto-approve).
+      # Como GitHub ya está autenticado como la SA, tiene permisos para crear VPCs.
+      - name: 'Terraform Apply (Host Environment)'
+        run: terraform -chdir=environments/host apply -auto-approve
