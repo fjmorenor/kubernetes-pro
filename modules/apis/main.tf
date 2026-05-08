@@ -12,6 +12,7 @@ locals {
     "logging.googleapis.com",              # Conecta con: Sistema de auditoría de todos los módulos.
     "monitoring.googleapis.com",           # Conecta con: Métricas de salud del Cluster.
     "cloudresourcemanager.googleapis.com", # Conecta con: Terraform (para gestionar el proyecto).
+    "iamcredentials.googleapis.com"
   ]
 
   # LISTA HOST: APIs específicas para la gestión de red centralizada.
