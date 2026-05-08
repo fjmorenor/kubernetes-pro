@@ -61,7 +61,7 @@ module "firewall" {
   project_id = var.project_id
   
   # Conecta con: El módulo 'network'. Extrae dinámicamente el nombre de la VPC creada[cite: 197].
-  vpc_name   = module.network
+  vpc_name   = var.vpc_name
   
   # Define el rango IP del Control Plane para que Google pueda administrar los nodos[cite: 120].
   master_ipv4_cidr = "172.16.0.0/28"
