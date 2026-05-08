@@ -23,8 +23,12 @@ locals {
 
   # LISTA DEV: APIs para el entorno donde residen las aplicaciones.
   apis_dev = [
-    "artifactregistry.googleapis.com",  # Conecta con: El despliegue de contenedores (YAML).
-    "autoscaling.googleapis.com",       # Conecta con: El escalado de nodos en GKE.
+    "container.googleapis.com",         # <--- ¡OBLIGATORIA! Es la API de GKE.
+  "artifactregistry.googleapis.com",  # Para tus imágenes de Docker.
+  "autoscaling.googleapis.com",       # Para que el clúster crezca solo.
+  "cloudresourcemanager.googleapis.com", # Para que Terraform gestione el proyecto.
+  "iam.googleapis.com",               # Para las cuentas de servicio de los nodos.
+  "compute.googleapis.com"            # Porque los nodos de GKE son, al final, VMs.
   ]
 
   # LÓGICA DE COMBINACIÓN:
