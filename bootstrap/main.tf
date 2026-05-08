@@ -27,7 +27,9 @@ module "sa_github" {
     "roles/serviceusage.serviceUsageAdmin",
     "roles/compute.networkAdmin",
     "roles/compute.securityAdmin",
-    "roles/serviceusage.serviceUsageAdmin"
+    "roles/serviceusage.serviceUsageAdmin",
+    "roles/serviceusage.serviceUsageAdmin",
+    "roles/compute.admin"
   ]
 }
 
