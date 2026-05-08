@@ -65,8 +65,8 @@ module "gke_standard" {
   # --- DIRECCIONAMIENTO DE K8S ---
   # Recibe del Main: Los nombres de los rangos secundarios definidos en la red compartida[cite: 145].
   # Conecta con: Los rangos 'pods-standard' y 'services-standard' para la VPC Nativa[cite: 156, 162].
-  pods_range_name     = "pods-standard"
-  services_range_name = "services-standard"
+  pods_range_name     = "subnet-pods"
+  services_range_name = "subnet-service"
 
   # --- CONFIGURACIÓN DE NODOS ---
   # Conecta con: El módulo 'sa_gke_nodes' mediante su output 'email'[cite: 80, 81].
