@@ -1,0 +1,10 @@
+project_id = "zafa-host-zafa"
+dev_project_id = "zafa-dev-zafa"
+region = "europe-west1"
+vpc_name = "vpc-kubernetes"
+
+subnet_primary_cidr = "10.10.0.0/24"
+subnet_pods_cidr = "10.20.0.0/16"
+subnet_services_cidr = "10.30.0.0/20"
+subnet_pods_name = "subnet_pods"
+subnet_services_name = "subnet_service"
