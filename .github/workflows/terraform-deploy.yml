@@ -3,11 +3,11 @@ name: 'Terraform Deploy'
 on:
   push:
     branches: ["main"]
-  workflow_dispatch:
+  workflow_dispatch: # Permite ejecución manual
 
 permissions:
   contents: 'read'
-  id-token: 'write'
+  id-token: 'write' # Obligatorio para OIDC con Google Cloud
 
 jobs:
   terraform-deploy:
@@ -15,8 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     
     env:
-      TF_VAR_host_project_id: ${{ secrets.GCP_PROJECT_ID_HOST }}
-      TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID_DEV }}
+      # Variables de entorno para que Terraform las recoja
+      TF_VAR_host_project_id: "zafa-host-zafa"
+      TF_VAR_project_id: "zafa-dev-zafa"
       TF_LOG: INFO 
 
     steps:
@@ -33,7 +34,9 @@ jobs:
       - name: '3. Install Terraform'
         uses: hashicorp/setup-terraform@v3
 
-      # --- FASE 1: HOST ---
+      # -----------------------------------------------------------------------
+      # FASE 1: REDES Y APIs (Carpeta Host)
+      # -----------------------------------------------------------------------
       - name: '4. Terraform Init (Host)'
         run: terraform -chdir=environments/host init
 
@@ -41,25 +44,34 @@ jobs:
         run: |
           terraform -chdir=environments/host apply \
             -var-file="terraform.tfvars" \
+            -input=false \
             -auto-approve
 
-      # --- FASE INTERMEDIA: SHARED VPC ---
-      - name: '5.1. Terraform Init (Shared VPC Link)'
-        run: terraform -chdir=modules/shared-vpc init
+      # -----------------------------------------------------------------------
+      # FASE INTERMEDIA: VÍNCULO SHARED VPC
+      # Nota: Comentado porque el vínculo ya fue verificado manualmente en GCP.
+      # Evitamos errores de permisos de Organización (compute.organizations.enableXpnResource).
+      # -----------------------------------------------------------------------
+      # - name: '5.1. Terraform Init (Shared VPC Link)'
+      #   run: terraform -chdir=modules/shared-vpc init
 
-      - name: '5.2. Terraform Apply (Shared VPC Link)'
-        run: |
-          terraform -chdir=modules/shared-vpc apply \
-            -var="host_project_id=zafa-host-zafa" \
-            -var="service_project_id=zafa-dev-zafa" \
-            -auto-approve
+      # - name: '5.2. Terraform Apply (Shared VPC Link)'
+      #   run: |
+      #     terraform -chdir=modules/shared-vpc apply \
+      #       -var="host_project_id=zafa-host-zafa" \
+      #       -var="service_project_id=zafa-dev-zafa" \
+      #       -auto-approve
 
-      # --- FASE 2: DEV ---
+      # -----------------------------------------------------------------------
+      # FASE 2: CLÚSTER KUBERNETES (Carpeta Dev)
+      # -----------------------------------------------------------------------
       - name: '6. Terraform Init (Dev)'
         run: terraform -chdir=environments/dev init
 
       - name: '7. Terraform Apply (Dev)'
         run: |
+          # Este paso creará el clúster usando la red ya vinculada en el Host
           terraform -chdir=environments/dev apply \
             -var-file="terraform.tfvars" \
+            -input=false \
             -auto-approve
