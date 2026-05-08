@@ -9,7 +9,7 @@
 # -----------------------------------------------------------------------------
 output "host_project_id" {
   description = "El ID del proyecto que ahora actúa como Host de la VPC Compartida."
-  value       = google_compute_shared_vpc_host_project.host.project
+  value       = var.host_project_id
 
   # DONDE CONECTARÁ:
   # Se enviará al Main Principal (environments/host/main.tf).
