@@ -6,6 +6,7 @@ cluster_name = "gke-standard-kubernetes"
 min_nodes = "1"
 max_nodes = "2"
 machine_type = "e2-medium"
+disk_size_gb = 15
 
 vpc_self_link = "https://www.googleapis.com/compute/v1/projects/zafa-host-zafa/global/networks/vpc-kubernetes"
 

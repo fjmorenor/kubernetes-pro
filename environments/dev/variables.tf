@@ -32,3 +32,6 @@ variable "project_id" {
  variable "machine_type" {
     type = string
  }
+ variable "disk_size_gb" {
+   type = number
+ }

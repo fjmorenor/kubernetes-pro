@@ -77,6 +77,7 @@ module "gke_standard" {
   machine_type     = var.machine_type
   min_nodes        = var.min_nodes
   max_nodes        = var.max_nodes
+  disk_size_gb = var.disk_size_gb
 
   # Conecta con: El módulo 'sa_gke_nodes'. El cluster no puede iniciarse sin su identidad[cite: 199, 200].
   depends_on       = [module.sa_gke_nodes]
